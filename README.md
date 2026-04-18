@@ -9,7 +9,7 @@
 Cascade is an AI-powered personal life optimization system that detects bottlenecks in your daily life and suggests the most impactful actions to improve productivity, mental health, and overall performance.
 
 ## 🌐 Live Demo
-- **Website:** [https://loquacious-dolphin-5610c1.netlify.app](https://loquacious-dolphin-5610c1.netlify.app)
+- **Website:** https://cascadeaimanager.netlify.app/
 - **Backend API:** [https://cascade-api-production.up.railway.app](https://cascade-api-production.up.railway.app)
 
 ## 📸 Screenshots
