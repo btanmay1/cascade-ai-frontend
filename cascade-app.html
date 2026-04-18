@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cascade App</title>
+  <style>
+    :root {
+      --bg: #0d0f1a;
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #8b5cf6;
+      --primary-hover: #7c3aed;
+      --teal: #06d6a0;
+      --orange: #f97316;
+      --text: #f8fafc;
+      --muted: rgba(255, 255, 255, 0.5);
+    }
+
+    * { box-sizing: border-box; }
+    
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 3px; }
+
+    .screen { display: none; min-height: 100vh; width: 100%; }
+    .screen.active { display: flex; }
+    .screen-center { display: none; min-height: 100vh; width: 100%; align-items: center; justify-content: center; padding: 1rem; }
+    .screen-center.active { display: flex; }
+
+    /* Forms & Auth */
+    .auth-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 3rem 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #c084fc, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0 0 0.5rem 0;
+      font-size: 2rem;
+    }
+    .subtitle { color: var(--muted); margin: 0 0 2rem 0; font-size: 0.95rem; text-align: center; }
+    .input-group { width: 100%; margin-bottom: 1.25rem; }
+    .input-group label { display: block; margin-bottom: 0.5rem; color: var(--muted); font-size: 0.9rem; }
+    .input-group input {
+      width: 100%; padding: 12px 16px; border-radius: 8px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--card-border);
+      color: var(--text); outline: none; font-size: 1rem; transition: border-color 0.2s;
+    }
+    .input-group input:focus { border-color: var(--primary); }
+    .btn-primary {
+      width: 100%; padding: 14px 16px; border-radius: 12px;
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+      color: white; border: none; font-size: 1rem; font-weight: bold;
+      cursor: pointer; transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+    .auth-link { color: var(--primary); text-decoration: none; cursor: pointer; font-size: 0.95rem; margin-top: 1.5rem; }
+    .error-msg { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3); padding: 0.75rem; border-radius: 8px; width: 100%; text-align: center; margin-bottom: 1.5rem; display: none; }
+
+    /* Dashboard Layout */
+    .sidebar { width: 220px; background: #111827; border-right: 1px solid var(--card-border); display: flex; flexDirection: column; padding: 2rem 1.5rem; position: fixed; height: 100vh; }
+    .main-content { flex: 1; margin-left: 220px; padding: 3rem 4rem; display: flex; flex-direction: column; gap: 3rem; }
+    .nav-item { padding: 0.75rem 1rem; color: var(--muted); border-radius: 8px; cursor: pointer; margin-bottom: 0.5rem; font-weight: 500; display: flex; gap: 0.75rem; align-items: center; transition: 0.2s; }
+    .nav-item.active { background: var(--primary); color: white; }
+    .nav-item:not(.active):hover { background: rgba(255,255,255,0.05); color: white; }
+
+    /* Dashboard Components */
+    .hero-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 2.5rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .score-number { font-size: 4rem; font-weight: 800; color: var(--primary); line-height: 1; }
+    .progress-track { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-top: 1rem; overflow: hidden; }
+    .progress-fill { height: 100%; width: 0%; border-radius: 4px; transition: width 1s ease-out; background: var(--primary); }
+    .stat-pills { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .stat-pill { background: rgba(255,255,255,0.05); padding: 0.75rem 1.25rem; border-radius: 999px; display: flex; align-items: center; gap: 0.75rem; border: 1px solid var(--card-border); }
+
+    .tasks-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .task-row { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; cursor: pointer; transition: 0.2s; }
+    .task-row:hover { background: rgba(255,255,255,0.08); }
+    .checkbox { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--muted); display: flex; align-items: center; justify-content: center; }
+    .task-row.done .checkbox { background: var(--primary); border-color: var(--primary); }
+    .task-row.done .checkbox::after { content: '✓'; color: white; font-size: 12px; }
+    .task-row.done .task-text { color: var(--muted); text-decoration: line-through; }
+
+    .chart-container { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 2rem; height: 300px; display: flex; align-items: flex-end; gap: 1rem; justify-content: space-between; }
+    .bar-wrapper { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 0.5rem; }
+    .bar-track { width: 30px; height: 100%; background: rgba(255,255,255,0.05); border-radius: 8px; display: flex; align-items: flex-end; position: relative; }
+    .bar-fill { width: 100%; border-radius: 8px; background: var(--primary); transition: height 1s; }
+    .bar-label { font-size: 0.8rem; color: var(--muted); }
+
+    .bottleneck-alert { background: rgba(249, 115, 22, 0.1); border-left: 4px solid var(--orange); padding: 1.5rem; border-radius: 12px; display: none; }
+
+    /* Daily Input Layout */
+    .di-header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--card-border); }
+    .di-tabs { display: flex; gap: 0.5rem; margin-top: 1.5rem; overflow-x: auto; scrollbar-width: none; }
+    .di-tab { padding: 0.5rem 1.25rem; border-radius: 999px; cursor: pointer; color: var(--muted); font-weight: 600; font-size: 0.9rem; white-space: nowrap; }
+    .di-tab.active { background: white; color: var(--bg); }
+    .di-main { padding: 2rem; max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem; }
+    
+    .di-view { display: none; }
+    .di-view.active { display: flex; flex-direction: column; gap: 2rem; }
+
+    /* Daily Input Tab 1 */
+    .grid-2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+    @media (min-width: 768px) { .grid-2col { grid-template-columns: 1fr 1fr; } }
+    .slider-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.5rem; }
+    .slider-group { margin-bottom: 1.25rem; }
+    .slider-header { display: flex; justify-content: space-between; margin-bottom: 0.75rem; font-size: 0.9rem; }
+    
+    /* Native Slider Styling */
+    input[type=range] {
+      -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; outline: none;
+      background: linear-gradient(to right, var(--primary) var(--val, 50%), rgba(255,255,255,0.1) var(--val, 50%));
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: white; cursor: pointer;
+      box-shadow: 0 0 10px rgba(139,92,246,0.5); transition: transform 0.1s;
+    }
+    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+    /* Other Daily Input Tabs */
+    .bn-card { background: var(--card-bg); border-radius: 14px; padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+    .lm-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+    .pill-red { background: rgba(239,68,68,0.15); color: #fca5a5; padding: 0.75rem 1.5rem; border-radius: 999px; font-weight: 600; }
+    .pill-green { background: rgba(16,185,129,0.15); color: #6ee7b7; padding: 0.75rem 1.5rem; border-radius: 999px; font-weight: 600; }
+    .pill-purple { background: rgba(139,92,246,0.15); color: #d8b4fe; padding: 0.75rem 1.5rem; border-radius: 999px; font-weight: 600; }
+    
+    .pipeline-row { display: flex; align-items: center; gap: 1.5rem; position: relative; z-index: 1; }
+    .pipeline-dot { width: 12px; height: 12px; border-radius: 50%; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(139,92,246,0.7); } 70% { box-shadow: 0 0 0 10px rgba(139,92,246,0); } 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0); } }
+    
+    .data-table-row { display: flex; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.02); }
+    .data-table-row:nth-child(even) { background: rgba(255,255,255,0.02); }
+  </style>
+</head>
+<body>
+
+  <!-- SCREEN 1: LOGIN -->
+  <div id="screen-login" class="screen-center active">
+    <div class="auth-card">
+      <h1 class="gradient-text">Cascade</h1>
+      <p class="subtitle">Your personal life optimization system</p>
+      <div id="login-error" class="error-msg"></div>
+      <form id="login-form" style="width: 100%;">
+        <div class="input-group">
+          <label>Email Address</label>
+          <input type="email" id="login-email" required>
+        </div>
+        <div class="input-group">
+          <label>Password</label>
+          <input type="password" id="login-password" required>
+        </div>
+        <button type="submit" class="btn-primary" id="login-btn">Login</button>
+      </form>
+      <a class="auth-link" onclick="switchScreen('screen-register')">Don't have an account? Register</a>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: REGISTER -->
+  <div id="screen-register" class="screen-center">
+    <div class="auth-card">
+      <h1 class="gradient-text">Create Account</h1>
+      <p class="subtitle">Start optimizing your life today</p>
+      <div id="register-error" class="error-msg"></div>
+      <form id="register-form" style="width: 100%;">
+        <div class="input-group">
+          <label>Email Address</label>
+          <input type="email" id="register-email" required>
+        </div>
+        <div class="input-group">
+          <label>Password</label>
+          <input type="password" id="register-password" required>
+        </div>
+        <button type="submit" class="btn-primary" id="register-btn">Create Account</button>
+      </form>
+      <a class="auth-link" onclick="switchScreen('screen-login')">Already have an account? Login</a>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: DASHBOARD -->
+  <div id="screen-dashboard" class="screen">
+    <div class="sidebar">
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 3rem;">
+        <span style="font-size: 1.5rem;">⚡</span>
+        <span style="font-size: 1.25rem; font-weight: 800;">Cascade</span>
+      </div>
+      <div style="display: flex; flex-direction: column; flex: 1;">
+        <div class="nav-item active">🏠 Today</div>
+        <div class="nav-item">📅 This Week</div>
+        <div class="nav-item">📊 Insights</div>
+        <div class="nav-item">⚡ Actions</div>
+        <div class="nav-item">⚙️ Settings</div>
+      </div>
+      <div style="border-top: 1px solid var(--card-border); padding-top: 1.5rem;">
+        <div style="color: var(--muted); font-size: 0.8rem; margin-bottom: 1rem;" id="user-email">user@example.com</div>
+        <button onclick="logout()" style="background: transparent; color: var(--muted); border: none; cursor: pointer; text-align: left; width: 100%; font-weight: 600;">Log out</button>
+      </div>
+    </div>
+    
+    <div class="main-content">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h1 style="margin: 0 0 0.5rem 0;" id="greeting">Good morning, Tanmay</h1>
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <span style="color: var(--muted);" id="current-date">Date</span>
+            <span style="background: rgba(139,92,246,0.15); color: var(--primary); padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: bold;">● LIVE</span>
+          </div>
+        </div>
+        <button class="btn-primary" style="width: auto; padding: 0.75rem 1.5rem; border-radius: 999px;" onclick="switchScreen('screen-daily-input')">Daily Check-in</button>
+      </div>
+
+      <div class="hero-card">
+        <div style="display: flex; flex-direction: column; width: 250px;">
+          <span style="color: var(--muted); font-size: 0.8rem; font-weight: bold; letter-spacing: 1px;">CASCADE SCORE</span>
+          <div style="display: flex; align-items: baseline; gap: 0.5rem;">
+            <span class="score-number" id="dash-score">--</span>
+            <span style="color: var(--muted); font-size: 1.5rem;">/ 100</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="dash-progress"></div>
+          </div>
+        </div>
+        <div class="stat-pills">
+          <div class="stat-pill"><span style="color: #3b82f6;">●</span> 7.2h Sleep</div>
+          <div class="stat-pill"><span style="color: var(--primary);">●</span> 82% Focus</div>
+          <div class="stat-pill"><span style="color: var(--teal);">●</span> 6.4k Steps</div>
+        </div>
+      </div>
+
+      <div class="bottleneck-alert" id="bottleneck-alert">
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <span>⚠️</span><h4 style="margin: 0; color: var(--orange);">Main bottleneck detected today</h4>
+        </div>
+        <p style="margin: 0.5rem 0 0 1.5rem; color: rgba(255,255,255,0.7);" id="bottleneck-text">Loading...</p>
+      </div>
+
+      <div style="display: flex; gap: 2rem;">
+        <div style="flex: 1;">
+          <h3 style="margin: 0 0 1rem 0;">Today's Focus</h3>
+          <div class="tasks-list">
+            <div class="task-row" onclick="this.classList.toggle('done')">
+              <div style="display: flex; gap: 1rem; align-items: center;"><div class="checkbox"></div><span class="task-text">Get 7+ hours of sleep</span></div>
+              <span style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.8rem;">Health</span>
+            </div>
+            <div class="task-row" onclick="this.classList.toggle('done')">
+              <div style="display: flex; gap: 1rem; align-items: center;"><div class="checkbox"></div><span class="task-text">Block 2 hours for deep work</span></div>
+              <span style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.8rem;">Focus</span>
+            </div>
+            <div class="task-row" onclick="this.classList.toggle('done')">
+              <div style="display: flex; gap: 1rem; align-items: center;"><div class="checkbox"></div><span class="task-text">Take a 20 min walk</span></div>
+              <span style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.8rem;">Activity</span>
+            </div>
+          </div>
+        </div>
+        <div style="flex: 1;">
+          <h3 style="margin: 0 0 1rem 0;">This Week</h3>
+          <div class="chart-container" id="dash-chart">
+            <!-- Bars injected by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: DAILY INPUT -->
+  <div id="screen-daily-input" class="screen" style="flex-direction: column;">
+    <header class="di-header">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: baseline; gap: 0.75rem;">
+          <span style="font-size: 1.5rem; font-weight: 800;" onclick="switchScreen('screen-dashboard')" style="cursor:pointer">Cascade</span>
+          <span style="color: var(--muted); font-size: 0.75rem; letter-spacing: 0.1em;">LEVERAGE · AI TRACK</span>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+          <span style="background: rgba(255,255,255,0.1); padding: 0.4rem 1rem; border-radius: 999px; font-size: 0.85rem;">Day 8 / 15</span>
+          <span style="background: rgba(16,185,129,0.15); color: var(--teal); padding: 0.4rem 1rem; border-radius: 999px; font-size: 0.85rem;">● Pipeline active</span>
+        </div>
+      </div>
+      <div class="di-tabs" id="di-tabs">
+        <div class="di-tab active" data-target="di-view-input">Daily Input</div>
+        <div class="di-tab" data-target="di-view-bottlenecks">Bottlenecks</div>
+        <div class="di-tab" data-target="di-view-lifemap">Life Map</div>
+        <div class="di-tab" data-target="di-view-pipeline">Pipeline</div>
+        <div class="di-tab" data-target="di-view-tomorrow">Tomorrow</div>
+        <div class="di-tab" data-target="di-view-mlstatus">ML Status</div>
+        <div class="di-tab" data-target="di-view-datastore">Data Store</div>
+      </div>
+    </header>
+
+    <main class="di-main">
+      
+      <!-- VIEW 1: Daily Input -->
+      <div id="di-view-input" class="di-view active">
+        <h2 style="font-size: 0.85rem; color: var(--muted); letter-spacing: 0.15em;">LOG TODAY'S VITALS — DAY 8</h2>
+        <div class="grid-2col" id="sliders-grid">
+          <!-- Populated by JS -->
+        </div>
+        <button class="btn-primary" onclick="submitVitals()">Calculate My Cascade Score →</button>
+      </div>
+
+      <!-- VIEW 2: Bottlenecks -->
+      <div id="di-view-bottlenecks" class="di-view" style="max-width: 800px; margin: 0 auto; width: 100%;">
+        <div class="bn-card" style="border-left: 4px solid #ef4444;">
+          <div style="display: flex; justify-content: space-between;">
+            <h3 style="margin:0;">Sleep Deficit</h3><span class="pill-red" style="padding: 0.2rem 0.6rem; font-size: 0.8rem;">Critical</span>
+          </div>
+          <p style="color: var(--muted); margin: 0;">Your sleep average is 5.2h — 30% below optimal</p>
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem;"><span>Impact</span><span>-15%</span></div>
+            <div style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px;"><div style="background: #ef4444; width: 85%; height: 100%; border-radius: 3px;"></div></div>
+          </div>
+          <button style="background: var(--primary); color: white; border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer;">Fix This</button>
+        </div>
+        <div class="bn-card" style="border-left: 4px solid var(--orange);">
+          <div style="display: flex; justify-content: space-between;">
+            <h3 style="margin:0;">Low Physical Activity</h3><span style="background: rgba(249,115,22,0.15); color: var(--orange); padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem;">High</span>
+          </div>
+          <p style="color: var(--muted); margin: 0;">Only 2 active days this week</p>
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem;"><span>Impact</span><span>-8%</span></div>
+            <div style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px;"><div style="background: var(--orange); width: 55%; height: 100%; border-radius: 3px;"></div></div>
+          </div>
+          <button style="background: var(--primary); color: white; border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer;">Fix This</button>
+        </div>
+        <div class="bn-card" style="border-left: 4px solid #eab308;">
+          <div style="display: flex; justify-content: space-between;">
+            <h3 style="margin:0;">Financial Stress</h3><span style="background: rgba(234,179,8,0.15); color: #facc15; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem;">Medium</span>
+          </div>
+          <p style="color: var(--muted); margin: 0;">Spending 20% over budget</p>
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem;"><span>Impact</span><span>-5%</span></div>
+            <div style="background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px;"><div style="background: #eab308; width: 35%; height: 100%; border-radius: 3px;"></div></div>
+          </div>
+          <button style="background: var(--primary); color: white; border: none; padding: 0.75rem; border-radius: 8px; cursor: pointer;">Fix This</button>
+        </div>
+      </div>
+
+      <!-- VIEW 3: Life Map -->
+      <div id="di-view-lifemap" class="di-view" style="max-width: 1000px; margin: 0 auto; width: 100%;">
+        <div class="lm-row">
+          <span class="pill-red">Poor Sleep</span><span style="color: var(--muted);">→</span>
+          <span class="pill-red">Low Energy</span><span style="color: var(--muted);">→</span>
+          <span class="pill-red">Poor Focus</span><span style="color: var(--muted);">→</span>
+          <span class="pill-purple">Low Score</span>
+        </div>
+        <div class="lm-row">
+          <span class="pill-red">High Stress</span><span style="color: var(--muted);">→</span>
+          <span class="pill-red">Bad Mood</span><span style="color: var(--muted);">→</span>
+          <span class="pill-purple">Low Productivity</span>
+        </div>
+      </div>
+
+      <!-- VIEW 4: Pipeline -->
+      <div id="di-view-pipeline" class="di-view" style="max-width: 800px; margin: 0 auto; width: 100%; position: relative;">
+        <div style="position: absolute; left: 88px; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.05);"></div>
+        
+        <div class="pipeline-row">
+          <div style="width: 70px; text-align: right; color: var(--muted); font-size: 0.9rem;">08:00 AM</div>
+          <div class="pipeline-dot" style="background: var(--teal);"></div>
+          <div style="color: var(--muted); text-decoration: line-through;">Morning routine (20 min)</div>
+          <div style="background: rgba(255,255,255,0.08); padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.75rem;">Habit</div>
+        </div>
+        
+        <div class="pipeline-row">
+          <div style="width: 70px; text-align: right; color: var(--muted); font-size: 0.9rem;">09:00 AM</div>
+          <div class="pipeline-dot" style="background: var(--teal);"></div>
+          <div style="color: var(--muted); text-decoration: line-through;">Deep work block (2 hrs)</div>
+          <div style="background: rgba(255,255,255,0.08); padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.75rem;">Focus</div>
+        </div>
+
+        <div class="pipeline-row">
+          <div style="width: 70px; text-align: right; color: var(--muted); font-size: 0.9rem;">01:00 PM</div>
+          <div class="pipeline-dot" style="background: var(--primary); animation: pulse 2s infinite;"></div>
+          <div>Healthy lunch break</div>
+          <div style="background: rgba(255,255,255,0.08); padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.75rem;">Nutrition</div>
+        </div>
+
+        <div class="pipeline-row">
+          <div style="width: 70px; text-align: right; color: var(--muted); font-size: 0.9rem;">03:00 PM</div>
+          <div class="pipeline-dot" style="background: rgba(255,255,255,0.2);"></div>
+          <div>Review tasks (15 min)</div>
+          <div style="background: rgba(255,255,255,0.08); padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.75rem;">Work</div>
+        </div>
+        
+        <div class="pipeline-row">
+          <div style="width: 70px; text-align: right; color: var(--muted); font-size: 0.9rem;">06:00 PM</div>
+          <div class="pipeline-dot" style="background: rgba(255,255,255,0.2);"></div>
+          <div>Exercise session (30 min)</div>
+          <div style="background: rgba(255,255,255,0.08); padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.75rem;">Activity</div>
+        </div>
+        
+        <div class="pipeline-row">
+          <div style="width: 70px; text-align: right; color: var(--muted); font-size: 0.9rem;">10:00 PM</div>
+          <div class="pipeline-dot" style="background: rgba(255,255,255,0.2);"></div>
+          <div>Wind down routine</div>
+          <div style="background: rgba(255,255,255,0.08); padding: 0.2rem 0.6rem; border-radius: 6px; font-size: 0.75rem;">Sleep</div>
+        </div>
+      </div>
+
+      <!-- VIEW 5: Tomorrow -->
+      <div id="di-view-tomorrow" class="di-view" style="max-width: 800px; margin: 0 auto; width: 100%;">
+        <div style="background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(139,92,246,0.05)); border: 1px solid rgba(139,92,246,0.3); border-radius: 16px; padding: 2rem; display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+          <span style="font-size: 3rem;">🌤️</span>
+          <h3 style="margin: 0; font-size: 1.5rem;">Predicted Score: 74</h3>
+          <p style="margin: 0; color: var(--muted);">Conditions are optimal for deep work tomorrow morning.</p>
+        </div>
+        <div>
+          <h3 style="margin: 1rem 0;">Priority Tasks</h3>
+          <div style="background: var(--card-bg); padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 0.5rem; display: flex; gap: 1rem;"><div style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--muted);"></div> Finish Q3 presentation outline</div>
+          <div style="background: var(--card-bg); padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 0.5rem; display: flex; gap: 1rem;"><div style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--muted);"></div> Go to the gym (Leg day)</div>
+          <div style="background: var(--card-bg); padding: 1rem 1.5rem; border-radius: 12px; margin-bottom: 0.5rem; display: flex; gap: 1rem;"><div style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--muted);"></div> Call parents</div>
+        </div>
+        <button style="background: var(--primary); color: white; border: none; padding: 1rem; border-radius: 12px; font-weight: bold; cursor: pointer;">Optimize Tomorrow</button>
+        <div style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2); padding: 1.25rem; border-radius: 12px; display: flex; align-items: center; gap: 1rem;">
+          <span style="font-size: 1.5rem;">🌙</span>
+          <div><h4 style="margin: 0; color: var(--teal);">Sleep Goal: 8 hours</h4><p style="margin: 0; color: var(--muted); font-size: 0.85rem;">Be in bed by 10:30 PM tonight to hit this.</p></div>
+        </div>
+      </div>
+
+      <!-- VIEW 6: ML Status -->
+      <div id="di-view-mlstatus" class="di-view" style="max-width: 800px; margin: 0 auto; width: 100%;">
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <div class="bn-card" style="flex-direction: row; justify-content: space-between; align-items: center; padding: 1rem 1.5rem;"><div style="display: flex; gap: 1rem;"><span style="color: var(--teal);">●</span><span style="color: var(--teal); font-weight: bold;">ACTIVE</span><span>Pattern Recognition</span></div><span style="color: var(--muted);">Analyzing 847 data points</span></div>
+          <div class="bn-card" style="flex-direction: row; justify-content: space-between; align-items: center; padding: 1rem 1.5rem;"><div style="display: flex; gap: 1rem;"><span style="color: var(--teal);">●</span><span style="color: var(--teal); font-weight: bold;">ACTIVE</span><span>Bottleneck Detector</span></div><span style="color: var(--muted);">3 patterns identified</span></div>
+          <div class="bn-card" style="flex-direction: row; justify-content: space-between; align-items: center; padding: 1rem 1.5rem;"><div style="display: flex; gap: 1rem;"><span style="color: #3b82f6;">●</span><span style="color: #3b82f6; font-weight: bold;">LEARNING</span><span>Behavior Predictor</span></div><span style="color: var(--muted);">Day 8 of 30 training</span></div>
+          <div class="bn-card" style="flex-direction: row; justify-content: space-between; align-items: center; padding: 1rem 1.5rem;"><div style="display: flex; gap: 1rem;"><span style="color: var(--muted);">●</span><span style="color: var(--muted); font-weight: bold;">PENDING</span><span>Life Graph Builder</span></div><span style="color: var(--muted);">Needs 14 more days</span></div>
+          <div class="bn-card" style="flex-direction: row; justify-content: space-between; align-items: center; padding: 1rem 1.5rem;"><div style="display: flex; gap: 1rem;"><span style="color: var(--muted);">●</span><span style="color: var(--muted); font-weight: bold;">PENDING</span><span>Auto-Optimizer</span></div><span style="color: var(--muted);">Unlocks at Day 15</span></div>
+        </div>
+        <div style="background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: 16px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><span>Model Accuracy: 67%</span></div>
+          <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; margin-bottom: 1.5rem;"><div style="background: var(--primary); width: 67%; height: 100%; border-radius: 4px;"></div></div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;"><span>Training Progress: 8/30 days</span></div>
+          <div style="background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; margin-bottom: 1rem;"><div style="background: var(--primary); width: 26%; height: 100%; border-radius: 4px;"></div></div>
+          <p style="text-align: center; color: var(--muted); font-size: 0.85rem; margin: 0;">Your AI gets smarter every day you log</p>
+        </div>
+      </div>
+
+      <!-- VIEW 7: Data Store -->
+      <div id="di-view-datastore" class="di-view" style="max-width: 800px; margin: 0 auto; width: 100%;">
+        <div>
+          <h2 style="color: #c084fc; font-size: 0.85rem; letter-spacing: 0.15em;">SLEEP DATA</h2>
+          <div style="border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden;">
+            <div class="data-table-row"><span style="color: var(--muted);">Last 7 days average</span><span>6.2h</span></div>
+            <div class="data-table-row"><span style="color: var(--muted);">Best night</span><span>8.1h (Tuesday)</span></div>
+            <div class="data-table-row"><span style="color: var(--muted);">Worst night</span><span>4.5h (Friday)</span></div>
+          </div>
+        </div>
+        <div>
+          <h2 style="color: #c084fc; font-size: 0.85rem; letter-spacing: 0.15em;">ACTIVITY DATA</h2>
+          <div style="border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden;">
+            <div class="data-table-row"><span style="color: var(--muted);">Weekly steps</span><span>34,200</span></div>
+            <div class="data-table-row"><span style="color: var(--muted);">Active days</span><span>3/7</span></div>
+            <div class="data-table-row"><span style="color: var(--muted);">Avg exercise</span><span>18 min/day</span></div>
+          </div>
+        </div>
+        <div>
+          <h2 style="color: #c084fc; font-size: 0.85rem; letter-spacing: 0.15em;">MENTAL DATA</h2>
+          <div style="border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden;">
+            <div class="data-table-row"><span style="color: var(--muted);">Avg mood</span><span>6.4/10</span></div>
+            <div class="data-table-row"><span style="color: var(--muted);">Stress trend</span><span style="color: var(--teal);">Decreasing ↓</span></div>
+            <div class="data-table-row"><span style="color: var(--muted);">Focus sessions</span><span>12</span></div>
+          </div>
+        </div>
+        <div>
+          <h2 style="color: #c084fc; font-size: 0.85rem; letter-spacing: 0.15em;">FINANCIAL DATA</h2>
+          <div style="border: 1px solid var(--card-border); border-radius: 12px; overflow: hidden;">
+            <div class="data-table-row"><span style="color: var(--muted);">Weekly spend</span><span>₹4,200</span></div>
+            <div class="data-table-row"><span style="color: var(--muted);">Budget usage</span><span>87%</span></div>
+            <div class="data-table-row"><span style="color: var(--muted);">Saving streak</span><span>3 days</span></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    const API_BASE = 'https://cascade-api-production.up.railway.app/api/v1';
+
+    // State
+    const sliderConfig = [
+      { id: 'sleep', title: 'Sleep', emoji: '🌙', sliders: [{ id: 'dur', label: 'Duration', min: 0, max: 12, def: 7, unit: 'h' }, { id: 'qual', label: 'Quality', min: 0, max: 10, def: 6 }, { id: 'cons', label: 'Bedtime consistency', min: 0, max: 10, def: 6 }] },
+      { id: 'work', title: 'Work', emoji: '💼', sliders: [{ id: 'foc', label: 'Focus hours', min: 0, max: 12, def: 4, unit: 'h' }, { id: 'str', label: 'Stress level', min: 0, max: 10, def: 5 }, { id: 'tsk', label: 'Tasks completed', min: 0, max: 10, def: 5 }] },
+      { id: 'money', title: 'Money', emoji: '₹', sliders: [{ id: 'spnd', label: 'Spend vs plan', min: 0, max: 10, def: 5 }, { id: 'anx', label: 'Financial anxiety', min: 0, max: 10, def: 4 }, { id: 'sav', label: 'Saving streak', min: 0, max: 10, def: 3 }] },
+      { id: 'health', title: 'Health', emoji: '❤️', sliders: [{ id: 'exc', label: 'Exercise', min: 0, max: 120, def: 20, unit: 'min' }, { id: 'nrg', label: 'Energy level', min: 0, max: 10, def: 5 }, { id: 'nut', label: 'Nutrition score', min: 0, max: 10, def: 5 }] },
+      { id: 'rel', title: 'Relationships', emoji: '🤝', sliders: [{ id: 'soc', label: 'Social time', min: 0, max: 10, def: 3 }, { id: 'con', label: 'Connection quality', min: 0, max: 10, def: 5 }, { id: 'cnf', label: 'Conflict level', min: 0, max: 10, def: 3 }] },
+      { id: 'men', title: 'Focus / Mental', emoji: '🧠', sliders: [{ id: 'clr', label: 'Clarity', min: 0, max: 10, def: 5 }, { id: 'ovr', label: 'Overwhelm', min: 0, max: 10, def: 5 }, { id: 'mot', label: 'Motivation', min: 0, max: 10, def: 5 }] },
+      { id: 'mood', title: 'Mood', emoji: '⭐', sliders: [{ id: 'ovl', label: 'Overall mood', min: 0, max: 10, def: 5 }, { id: 'anx', label: 'Anxiety level', min: 0, max: 10, def: 4 }, { id: 'hap', label: 'Happiness', min: 0, max: 10, def: 5 }] },
+      { id: 'env', title: 'Environment', emoji: '🏠', sliders: [{ id: 'wrk', label: 'Workspace quality', min: 0, max: 10, def: 5 }, { id: 'dst', label: 'Distraction level', min: 0, max: 10, def: 5 }, { id: 'cmf', label: 'Comfort', min: 0, max: 10, def: 5 }] }
+    ];
+
+    // Navigation
+    function switchScreen(screenId) {
+      document.querySelectorAll('.screen, .screen-center').forEach(el => el.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+      if (screenId === 'screen-dashboard') loadDashboard();
+    }
+
+    function logout() {
+      localStorage.removeItem('token');
+      switchScreen('screen-login');
+    }
+
+    // Auth Calls
+    async function handleAuth(e, type) {
+      e.preventDefault();
+      const email = document.getElementById(`${type}-email`).value;
+      const password = document.getElementById(`${type}-password`).value;
+      const btn = document.getElementById(`${type}-btn`);
+      const errDiv = document.getElementById(`${type}-error`);
+      
+      btn.disabled = true;
+      btn.textContent = 'Loading...';
+      errDiv.style.display = 'none';
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/${type}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, timezone: 'Asia/Kolkata' })
+        });
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.message || 'Authentication failed');
+
+        if (type === 'login') {
+          localStorage.setItem('token', data.token || data.data?.token);
+          document.getElementById('user-email').textContent = email;
+          switchScreen('screen-dashboard');
+        } else {
+          switchScreen('screen-login');
+          alert('Registration successful! Please login.');
+        }
+      } catch (err) {
+        errDiv.textContent = err.message;
+        errDiv.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = type === 'login' ? 'Login' : 'Create Account';
+      }
+    }
+
+    document.getElementById('login-form').addEventListener('submit', (e) => handleAuth(e, 'login'));
+    document.getElementById('register-form').addEventListener('submit', (e) => handleAuth(e, 'register'));
+
+    // Dashboard Data
+    async function loadDashboard() {
+      const token = localStorage.getItem('token');
+      if (!token) return switchScreen('screen-login');
+
+      // Set date
+      document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+      
+      try {
+        const res = await fetch(`${API_BASE}/scores/compute`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.status === 401) return logout();
+        const data = await res.json();
+
+        // Update Score
+        const score = data.healthScore || 0;
+        document.getElementById('dash-score').textContent = score;
+        const progressFill = document.getElementById('dash-progress');
+        progressFill.style.width = `${score}%`;
+        progressFill.style.background = score <= 40 ? '#ef4444' : score <= 70 ? 'var(--orange)' : 'var(--teal)';
+
+        // Update Alert
+        if (score < 70 && data.bottlenecks?.length > 0) {
+          document.getElementById('bottleneck-alert').style.display = 'block';
+          document.getElementById('bottleneck-text').textContent = data.bottlenecks[0].insight;
+        } else {
+          document.getElementById('bottleneck-alert').style.display = 'none';
+        }
+
+        // Draw Chart
+        const chart = document.getElementById('dash-chart');
+        chart.innerHTML = '';
+        const history = (data.history || []).slice(-7);
+        if (history.length === 0) {
+          ['M','T','W','T','F','S','S'].forEach(d => history.push({ date: d, score: Math.floor(Math.random() * 40) + 40 }));
+        }
+
+        history.forEach((h, i) => {
+          const isToday = i === history.length - 1;
+          const label = new Date(h.date).getTime() ? new Date(h.date).toLocaleDateString('en-US', { weekday: 'short' }) : h.date;
+          chart.innerHTML += `
+            <div class="bar-wrapper">
+              <div class="bar-track">
+                <div class="bar-fill" style="height: 0%; background: ${isToday ? '#7c3aed' : 'var(--primary)'}"></div>
+              </div>
+              <span class="bar-label" style="color: ${isToday ? 'white' : 'var(--muted)'}; font-weight: ${isToday ? 'bold' : 'normal'}">${label}</span>
+            </div>
+          `;
+        });
+
+        // Animate chart
+        setTimeout(() => {
+          const fills = chart.querySelectorAll('.bar-fill');
+          fills.forEach((fill, i) => fill.style.height = `${history[i].score}%`);
+        }, 100);
+
+      } catch (err) {
+        console.error('Failed to load dashboard', err);
+      }
+    }
+
+    // Daily Input Sliders Setup
+    const slidersGrid = document.getElementById('sliders-grid');
+    sliderConfig.forEach(cat => {
+      let slidersHtml = '';
+      cat.sliders.forEach(s => {
+        slidersHtml += `
+          <div class="slider-group">
+            <div class="slider-header">
+              <span style="color: rgba(255,255,255,0.8);">${s.label}</span>
+              <span style="color: var(--muted);" id="val-${cat.id}-${s.id}">${s.def}${s.unit || ''}</span>
+            </div>
+            <input type="range" id="slider-${cat.id}-${s.id}" min="${s.min}" max="${s.max}" value="${s.def}"
+              oninput="updateSlider('${cat.id}-${s.id}', this.value, '${s.min}', '${s.max}', '${s.unit || ''}')">
+          </div>
+        `;
+      });
+      slidersGrid.innerHTML += `
+        <div class="slider-card">
+          <h3 style="margin: 0 0 1.5rem 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem;"><span>${cat.emoji}</span> ${cat.title}</h3>
+          ${slidersHtml}
+        </div>
+      `;
+    });
+
+    // Initialize CSS vars for all sliders
+    document.querySelectorAll('input[type=range]').forEach(el => {
+      const min = el.min || 0;
+      const max = el.max || 100;
+      const val = el.value;
+      el.style.setProperty('--val', `${((val - min) / (max - min)) * 100}%`);
+    });
+
+    function updateSlider(id, val, min, max, unit) {
+      const el = document.getElementById(`slider-${id}`);
+      document.getElementById(`val-${id}`).textContent = val + unit;
+      el.style.setProperty('--val', `${((val - min) / (max - min)) * 100}%`);
+    }
+
+    // Daily Input Tabs Setup
+    document.querySelectorAll('.di-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.di-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.di-view').forEach(v => v.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.getAttribute('data-target')).classList.add('active');
+      });
+    });
+
+    async function submitVitals() {
+      // In a real app we'd gather the values and POST.
+      // For this static version, we simulate the request and go to dashboard.
+      const btn = event.target;
+      btn.textContent = 'Calculating...';
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.textContent = 'Calculate My Cascade Score →';
+        btn.disabled = false;
+        switchScreen('screen-dashboard');
+      }, 800);
+    }
+
+    // Init check
+    if (localStorage.getItem('token')) {
+      switchScreen('screen-dashboard');
+    } else {
+      switchScreen('screen-login');
+    }
+  </script>
+</body>
+</html>
